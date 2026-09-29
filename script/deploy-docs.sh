@@ -2,7 +2,7 @@
 shopt -s nullglob
 set -eo pipefail
 
-[[ -n "${GITHUB_ACTIONS}" ]] || [[ -n "${DOCS_DEPLOY_TOKEN}" ]] || exit 1
+[[ -n "${DOCS_DEPLOY_TOKEN:-}" ]] || { echo "No DOCS_DEPLOY_TOKEN provided, skipping docs deployment."; exit 0; }
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || realpath "$(dirname "$(readlink -f "${0}")")/..")
 
@@ -10,7 +10,7 @@ DOCS_DIR=${DOCS_DIR:-"${ROOT}/docs/_build/html"}
 DOCS_REPO=${DOCS_REPO:-streamlink/streamlink.github.io}
 DOCS_BRANCH=${DOCS_BRANCH:-master}
 DOCS_USER=${DOCS_USER:-streamlinkbot}
-DOCS_EMAIL=${DOCS_EMAIL:-streamlinkbot@users.noreply.github.com}
+DOCS_EMAIL=${DOCS_EMAIL:-"${DOCS_USER}@users.noreply.github.com"}
 
 FILELIST=".doctr-files"
 
