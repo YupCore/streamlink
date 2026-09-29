@@ -7,8 +7,11 @@ on:
 
 jobs:
   update-user-agents:
-    if: github.repository == 'streamlink/streamlink'
+    if: github.repository == 'streamlink/streamlink' || github.event_name == 'workflow_dispatch' || secrets.WHATISMYBROWSER_API_KEY != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -17,17 +20,23 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           prune-cache: true
-      - run: uv run --frozen --only-group script ./script/update-user-agents.py
+      - name: Update user agents
+        run: |
+          if [[ -z "${WHATISMYBROWSER_API_KEY:-}" ]]; then
+            echo "No WHATISMYBROWSER_API_KEY provided, skipping user agents update."
+            exit 0
+          fi
+          uv run --frozen --only-group script ./script/update-user-agents.py
         env:
           WHATISMYBROWSER_API_KEY: ${{ secrets.WHATISMYBROWSER_API_KEY }}
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          token: ${{ secrets.STREAMLINKBOT_USERAGENTS_PR }}
+          token: ${{ secrets.STREAMLINKBOT_USERAGENTS_PR || secrets.GITHUB_TOKEN }}
           add-paths: |
             src/streamlink/session/http_useragents.py
           commit-message: "session.http_useragents: update useragents"
-          committer: "streamlinkbot <streamlinkbot@users.noreply.github.com>"
-          author: "streamlinkbot <streamlinkbot@users.noreply.github.com>"
+          committer: ${{ github.repository == 'streamlink/streamlink' && 'streamlinkbot <streamlinkbot@users.noreply.github.com>' || 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>' }}
+          author: ${{ github.repository == 'streamlink/streamlink' && 'streamlinkbot <streamlinkbot@users.noreply.github.com>' || format('{0} <{1}+{0}@users.noreply.github.com>', github.actor, github.actor_id) }}
           branch: "automated/session/http_useragents/update"
           branch-suffix: timestamp
           delete-branch: true

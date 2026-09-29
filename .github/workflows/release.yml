@@ -6,11 +6,11 @@ on:
       - "**"
     tags:
       - "**"
+  workflow_dispatch: {}
 
 jobs:
   build:
     name: Build
-    if: github.repository == 'streamlink/streamlink'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,7 +43,6 @@ jobs:
 
   deploy:
     name: Deploy
-    if: github.repository == 'streamlink/streamlink'
     needs:
       - build
     runs-on: ubuntu-latest
@@ -71,6 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: uv run --frozen --only-group script ./script/github-release.py dist/*.tar.gz{,.asc}
       - name: Delete signatures before deploying to PyPI
-        run: rm dist/*.asc
+        run: rm -f dist/*.asc
       - name: PyPI release
+        if: github.repository == 'streamlink/streamlink' || vars.PYPI_PUBLISH == 'true'
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
